@@ -32,6 +32,37 @@ export interface AudioLevels {
   bands: { low: number; mid: number; high: number }
 }
 
+/** One turn of conversation sent to the assistant backend. */
+export interface AssistantMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/** A completed assistant reply. */
+export interface AssistantReply {
+  text: string
+}
+
+/** Handlers for a streaming assistant request. */
+export interface AssistantSendHandlers {
+  /** Called with each incremental text chunk as it streams in. */
+  onDelta?: (chunk: string) => void
+}
+
+/**
+ * The assistant channel on the bridge. The real LLM call runs in the main
+ * process (Node) — the renderer never holds the API key or touches the SDK.
+ */
+export interface AssistantBridge {
+  /** Whether a backend is configured (i.e. ANTHROPIC_API_KEY is set). */
+  isConfigured: () => Promise<boolean>
+  /** Send a conversation and stream back the reply. */
+  send: (
+    messages: AssistantMessage[],
+    handlers?: AssistantSendHandlers
+  ) => Promise<AssistantReply>
+}
+
 /** Channels exposed by the preload bridge on `window.nova`. */
 export interface NovaBridge {
   /** Ask the main process to quit the app. */
@@ -42,6 +73,8 @@ export interface NovaBridge {
   setClickThrough: (value: boolean) => void
   /** Subscribe to state-change requests coming from the tray menu. */
   onSetState: (cb: (state: AssistantState) => void) => () => void
+  /** The LLM backend, proxied to the main process. */
+  assistant: AssistantBridge
   /** Report the current platform (win32 / darwin / linux). */
   platform: string
 }

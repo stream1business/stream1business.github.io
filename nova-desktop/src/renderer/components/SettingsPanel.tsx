@@ -31,6 +31,7 @@ export function SettingsPanel({
   const updatePersonality = useNovaStore((s) => s.updatePersonality)
   const setAssistantState = useNovaStore((s) => s.setAssistantState)
   const lastExchange = useNovaStore((s) => s.lastExchange)
+  const streamingReply = useNovaStore((s) => s.streamingReply)
 
   const { ask, busy } = useAssistant()
   const [prompt, setPrompt] = useState('')
@@ -85,11 +86,20 @@ export function SettingsPanel({
                 Send
               </button>
             </div>
-            {lastExchange && (
+            {busy && streamingReply !== null ? (
               <div className="mt-2 rounded bg-white/5 p-2 text-white/70">
-                <div className="truncate text-white/40">“{lastExchange.prompt}”</div>
-                <div className="mt-0.5 text-nova-glow">{lastExchange.reply}</div>
+                <div className="text-nova-glow">
+                  {streamingReply || 'NOVA is thinking…'}
+                  <span className="animate-pulse">▋</span>
+                </div>
               </div>
+            ) : (
+              lastExchange && (
+                <div className="mt-2 rounded bg-white/5 p-2 text-white/70">
+                  <div className="truncate text-white/40">“{lastExchange.prompt}”</div>
+                  <div className="mt-0.5 text-nova-glow">{lastExchange.reply}</div>
+                </div>
+              )
             )}
           </div>
 

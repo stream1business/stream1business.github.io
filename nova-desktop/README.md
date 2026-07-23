@@ -7,8 +7,9 @@ the ring rotates and pulses in sync with speech rhythm.
 
 Built with **Electron + React 18 + TypeScript + Tailwind CSS**, with
 **Framer Motion** for spring physics and **Canvas 2D** for the ring render
-layer. Real-time audio comes from the **Web Audio API** (`AnalyserNode`); no
-external services are required for this build.
+layer. Real-time audio comes from the **Web Audio API** (`AnalyserNode`), and
+NOVA can talk to the **Claude Messages API** when an API key is present (it
+runs fully offline otherwise).
 
 ---
 
@@ -49,9 +50,10 @@ npm run dev      # launches the Electron app with hot reload
 
 Right-click the orb (or use the tray menu) to open settings — enable the
 microphone, switch themes, tune sensitivities, drive the state machine, or type
-into **Ask NOVA** to run a message through the assistant backend (stubbed) and
-watch it move through `thinking → responding → listening`. Settings and tuning
-persist across restarts.
+into **Ask NOVA** to talk to Claude and watch the reply stream in as the ring
+moves through `thinking → responding → listening`. Set `ANTHROPIC_API_KEY` for
+real replies (see below); without it NOVA runs in offline stub mode. Settings
+and tuning persist across restarts.
 
 Press **Ctrl/Cmd + Shift + Space** anywhere to show or hide the orb.
 
@@ -131,11 +133,21 @@ every change under `nova-desktop/`.
 - `src/renderer/config/themes.ts` — swappable colour/typography "skins"
   (`novaDefault`, `emberForge`, `arcticPulse`).
 
-### Assistant backend abstraction
-- `src/services/assistant.ts` — a single `sendMessage()` interface. Today a
-  local `StubAssistant` simulates `thinking → responding → listening`. Swap in
-  a real API (e.g. the Anthropic Messages API) later by implementing the same
-  interface and changing one line in `createAssistant()` — **zero UI changes**.
+### Assistant backend (real Anthropic API)
+- `src/services/assistant.ts` — a single `sendMessage()` interface behind which
+  `createAssistant()` picks the backend. `RemoteAssistant` talks to the real
+  **Claude Messages API** (`claude-opus-4-8`); `StubAssistant` is the offline
+  fallback. The UI is identical either way.
+- `src/main/assistant.ts` — the **only** place the Anthropic SDK and API key
+  live. The renderer never holds the key: it calls `window.nova.assistant.send()`,
+  which IPCs to the main process, which runs `client.messages.stream(...)` and
+  forwards each token back over `nova:assistant-delta`. Replies **stream** into
+  the panel live, and drive the state machine (`thinking → responding →
+  listening`).
+
+**Enabling it:** set `ANTHROPIC_API_KEY` in the environment before launching
+(`ANTHROPIC_API_KEY=sk-ant-... npm run dev`). Without a key, NOVA runs in
+offline stub mode and says so — no crash, no config needed to try the UI.
 
 ---
 

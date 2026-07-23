@@ -3,6 +3,7 @@ import { createOrbWindow } from './window'
 import { createTray } from './tray'
 import { registerIpc } from './ipc'
 import { registerHotkeys } from './hotkeys'
+import { registerAssistantIpc } from './assistant'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -27,6 +28,7 @@ if (!gotLock) {
     if (process.platform === 'darwin') app.dock?.hide()
 
     registerIpc(getWindow)
+    registerAssistantIpc()
     mainWindow = createOrbWindow()
     tray = createTray(getWindow)
     unregisterHotkeys = registerHotkeys(getWindow)

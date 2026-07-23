@@ -19,6 +19,7 @@ export function useAssistant(): {
   const assistant = useRef(createAssistant())
   const setAssistantState = useNovaStore((s) => s.setAssistantState)
   const setLastExchange = useNovaStore((s) => s.setLastExchange)
+  const setStreamingReply = useNovaStore((s) => s.setStreamingReply)
   const [busy, setBusy] = useState(false)
 
   const ask = useCallback(
@@ -26,8 +27,12 @@ export function useAssistant(): {
       const prompt = text.trim()
       if (!prompt || busy) return
       setBusy(true)
+      setStreamingReply('')
       try {
-        const reply = await assistant.current.sendMessage(prompt, setAssistantState)
+        const reply = await assistant.current.sendMessage(prompt, {
+          onState: setAssistantState,
+          onDelta: (full) => setStreamingReply(full)
+        })
         setLastExchange({ prompt, reply: reply.text })
       } catch (err) {
         setLastExchange({
@@ -36,10 +41,11 @@ export function useAssistant(): {
         })
         setAssistantState('listening')
       } finally {
+        setStreamingReply(null)
         setBusy(false)
       }
     },
-    [busy, setAssistantState, setLastExchange]
+    [busy, setAssistantState, setLastExchange, setStreamingReply]
   )
 
   return { ask, busy }

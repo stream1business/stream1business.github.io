@@ -44,6 +44,8 @@ export interface NovaStore {
   settingsOpen: boolean
   /** The most recent prompt/reply exchange, if any. */
   lastExchange: Exchange | null
+  /** The reply currently streaming in, or null when idle. */
+  streamingReply: string | null
 
   // --- actions ---
   setAssistantState: (state: AssistantState) => void
@@ -53,6 +55,7 @@ export interface NovaStore {
   updatePersonality: (patch: Partial<PersonalityConfig>) => void
   setSettingsOpen: (open: boolean) => void
   setLastExchange: (exchange: Exchange | null) => void
+  setStreamingReply: (text: string | null) => void
 }
 
 const initialAudio: AudioLevels = {
@@ -105,6 +108,7 @@ export const useNovaStore = create<NovaStore>((set) => ({
   settings: initialSettings,
   settingsOpen: false,
   lastExchange: null,
+  streamingReply: null,
 
   setAssistantState: (assistantState) => set({ assistantState }),
   setAudioLevels: (audioLevels) => set({ audioLevels }),
@@ -118,7 +122,8 @@ export const useNovaStore = create<NovaStore>((set) => ({
   updatePersonality: (patch) =>
     set((s) => ({ personality: { ...s.personality, ...patch } })),
   setSettingsOpen: (settingsOpen) => set({ settingsOpen }),
-  setLastExchange: (lastExchange) => set({ lastExchange })
+  setLastExchange: (lastExchange) => set({ lastExchange }),
+  setStreamingReply: (streamingReply) => set({ streamingReply })
 }))
 
 /**

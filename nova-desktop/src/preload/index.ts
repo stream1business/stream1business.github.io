@@ -1,5 +1,15 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { AssistantState, NovaBridge } from '../shared/types'
+import type {
+  AssistantMessage,
+  AssistantReply,
+  AssistantSendHandlers,
+  AssistantState,
+  NovaBridge
+} from '../shared/types'
+
+// Monotonic id so streamed deltas can be routed to the right in-flight request.
+let requestCounterSeed = 0
+const nextRequestId = (): string => `req-${Date.now()}-${++requestCounterSeed}`
 
 /**
  * Secure preload bridge. Exposes a narrow, typed API on `window.nova` — the
@@ -13,6 +23,18 @@ const bridge: NovaBridge = {
     const listener = (_e: unknown, state: AssistantState): void => cb(state)
     ipcRenderer.on('nova:set-state', listener)
     return () => ipcRenderer.removeListener('nova:set-state', listener)
+  },
+  assistant: {
+    isConfigured: () => ipcRenderer.invoke('nova:assistant-configured') as Promise<boolean>,
+    send: (messages: AssistantMessage[], handlers?: AssistantSendHandlers) => {
+      const id = nextRequestId()
+      const onDelta = (_e: unknown, payload: { id: string; text: string }): void => {
+        if (payload.id === id) handlers?.onDelta?.(payload.text)
+      }
+      ipcRenderer.on('nova:assistant-delta', onDelta)
+      return (ipcRenderer.invoke('nova:assistant-send', { id, messages }) as Promise<AssistantReply>)
+        .finally(() => ipcRenderer.removeListener('nova:assistant-delta', onDelta))
+    }
   },
   platform: process.platform
 }

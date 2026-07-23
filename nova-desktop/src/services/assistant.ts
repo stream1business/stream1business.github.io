@@ -1,78 +1,90 @@
-import type { AssistantState } from '@shared/types'
+import type { AssistantReply, AssistantState } from '@shared/types'
 
 /**
  * LLM backend abstraction.
  *
- * The UI only ever calls {@link Assistant.sendMessage}. Today that resolves to
- * a canned local reply; swapping in a real API (e.g. the Anthropic Messages
- * API) later means implementing this interface and changing one line in the
- * factory below — no UI changes required.
+ * The UI only ever calls {@link Assistant.sendMessage}. The concrete backend is
+ * chosen once by {@link createAssistant}; swapping implementations requires no
+ * UI changes.
  */
-export interface AssistantReply {
-  text: string
+export interface SendOptions {
+  /** Drive the orb's state machine (`thinking` → `responding` → `listening`). */
+  onState?: (state: AssistantState) => void
+  /** Receive the reply-so-far as it streams in (full text each call). */
+  onDelta?: (fullText: string) => void
 }
 
 export interface Assistant {
-  /**
-   * Send a user message and receive a reply.
-   * @param message   The user's text (or transcribed speech).
-   * @param onState   Optional callback so the caller can drive the orb's
-   *                  state machine (`thinking` → `responding` → `listening`).
-   */
-  sendMessage(
-    message: string,
-    onState?: (state: AssistantState) => void
-  ): Promise<AssistantReply>
+  sendMessage(message: string, opts?: SendOptions): Promise<AssistantReply>
 }
 
+const delay = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
+
 /**
- * Local stub assistant. Simulates "thinking" then "responding" latency so the
- * full state machine can be exercised end-to-end without a network backend.
+ * Offline stub. Simulates the `thinking → responding → listening` latency and
+ * "types" a canned reply so the full pipeline can be exercised with no backend.
  */
 export class StubAssistant implements Assistant {
-  async sendMessage(
-    message: string,
-    onState?: (state: AssistantState) => void
-  ): Promise<AssistantReply> {
-    onState?.('thinking')
-    await delay(900)
-    onState?.('responding')
-    await delay(1200)
-    onState?.('listening')
-    return { text: `You said: "${message}". (NOVA is running in offline stub mode.)` }
+  async sendMessage(message: string, opts?: SendOptions): Promise<AssistantReply> {
+    opts?.onState?.('thinking')
+    await delay(700)
+    opts?.onState?.('responding')
+
+    const text = `You said: "${message}". I'm running in offline mode — set ANTHROPIC_API_KEY to hear a real reply.`
+    // Stream it word-by-word so the UI behaves the same as the live backend.
+    let shown = ''
+    for (const word of text.split(' ')) {
+      shown += (shown ? ' ' : '') + word
+      opts?.onDelta?.(shown)
+      await delay(40)
+    }
+
+    opts?.onState?.('listening')
+    return { text }
   }
 }
 
 /**
- * Placeholder for the future real backend. Wiring this up later only requires
- * filling in `sendMessage` with an actual `fetch` to the model provider and
- * returning it from {@link createAssistant}.
- *
- * Example shape (not enabled):
- *
- *   const res = await fetch('https://api.anthropic.com/v1/messages', { ... })
+ * Real backend. Proxies to the main process (which owns the Anthropic SDK and
+ * the API key) via `window.nova.assistant`. Falls back to the stub when no key
+ * is configured, and surfaces backend errors as the reply text.
  */
 export class RemoteAssistant implements Assistant {
-  constructor(private readonly endpoint: string, private readonly apiKey: string) {}
+  private readonly fallback = new StubAssistant()
 
-  async sendMessage(
-    _message: string,
-    _onState?: (state: AssistantState) => void
-  ): Promise<AssistantReply> {
-    const configured = this.endpoint.length > 0 && this.apiKey.length > 0
-    throw new Error(
-      configured
-        ? 'RemoteAssistant.sendMessage is not implemented yet. Wire up the fetch call here.'
-        : 'RemoteAssistant needs an endpoint + API key before it can send messages.'
-    )
+  async sendMessage(message: string, opts?: SendOptions): Promise<AssistantReply> {
+    if (!(await window.nova.assistant.isConfigured())) {
+      return this.fallback.sendMessage(message, opts)
+    }
+
+    opts?.onState?.('thinking')
+    let firstDelta = true
+    let streamed = ''
+    try {
+      const reply = await window.nova.assistant.send([{ role: 'user', content: message }], {
+        onDelta: (chunk) => {
+          if (firstDelta) {
+            firstDelta = false
+            opts?.onState?.('responding')
+          }
+          streamed += chunk
+          opts?.onDelta?.(streamed)
+        }
+      })
+      opts?.onState?.('listening')
+      return reply
+    } catch (err) {
+      opts?.onState?.('listening')
+      return { text: err instanceof Error ? err.message : 'NOVA ran into an error.' }
+    }
   }
 }
 
 /** Factory: the single seam where the concrete backend is chosen. */
 export function createAssistant(): Assistant {
+  // The bridge only exists inside Electron; tests / plain-web contexts get the stub.
+  if (typeof window !== 'undefined' && window.nova?.assistant) {
+    return new RemoteAssistant()
+  }
   return new StubAssistant()
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
 }
