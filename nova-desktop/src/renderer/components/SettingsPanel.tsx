@@ -88,7 +88,7 @@ export function SettingsPanel({
               {voice.supported && (
                 <button
                   onClick={voice.listening ? voice.stop : voice.start}
-                  disabled={busy}
+                  disabled={busy || voice.transcribing}
                   title={voice.listening ? 'Stop listening' : 'Speak to NOVA'}
                   aria-pressed={voice.listening}
                   className={`rounded px-2 py-1 disabled:opacity-40 ${
@@ -113,6 +113,10 @@ export function SettingsPanel({
                 <div className="text-nova-teal">
                   Listening… {voice.interim || <span className="text-white/30">say something</span>}
                 </div>
+              </div>
+            ) : voice.transcribing ? (
+              <div className="mt-2 rounded bg-white/5 p-2 text-nova-teal">
+                Transcribing…<span className="animate-pulse">▋</span>
               </div>
             ) : voice.error ? (
               <div className="mt-2 rounded bg-red-500/10 p-2 text-[#ffb27a]">{voice.error}</div>

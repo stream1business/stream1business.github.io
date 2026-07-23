@@ -63,6 +63,22 @@ export interface AssistantBridge {
   ) => Promise<AssistantReply>
 }
 
+/** Result of a cloud transcription request. */
+export interface TranscriptionResult {
+  text: string
+}
+
+/**
+ * The speech-to-text channel, proxied to the main process. Audio is captured in
+ * the renderer, but the transcription API call (and its key) live in main.
+ */
+export interface TranscriptionBridge {
+  /** Whether a cloud STT backend is configured (an API key is set). */
+  isConfigured: () => Promise<boolean>
+  /** Transcribe a recorded audio clip. */
+  transcribe: (audio: ArrayBuffer, mimeType: string) => Promise<TranscriptionResult>
+}
+
 /** Channels exposed by the preload bridge on `window.nova`. */
 export interface NovaBridge {
   /** Ask the main process to quit the app. */
@@ -75,6 +91,8 @@ export interface NovaBridge {
   onSetState: (cb: (state: AssistantState) => void) => () => void
   /** The LLM backend, proxied to the main process. */
   assistant: AssistantBridge
+  /** The cloud speech-to-text backend, proxied to the main process. */
+  transcription: TranscriptionBridge
   /** Report the current platform (win32 / darwin / linux). */
   platform: string
 }

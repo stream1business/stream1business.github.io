@@ -4,7 +4,8 @@ import type {
   AssistantReply,
   AssistantSendHandlers,
   AssistantState,
-  NovaBridge
+  NovaBridge,
+  TranscriptionResult
 } from '../shared/types'
 
 // Monotonic id so streamed deltas can be routed to the right in-flight request.
@@ -35,6 +36,11 @@ const bridge: NovaBridge = {
       return (ipcRenderer.invoke('nova:assistant-send', { id, messages }) as Promise<AssistantReply>)
         .finally(() => ipcRenderer.removeListener('nova:assistant-delta', onDelta))
     }
+  },
+  transcription: {
+    isConfigured: () => ipcRenderer.invoke('nova:transcription-configured') as Promise<boolean>,
+    transcribe: (audio: ArrayBuffer, mimeType: string) =>
+      ipcRenderer.invoke('nova:transcribe', { audio, mimeType }) as Promise<TranscriptionResult>
   },
   platform: process.platform
 }

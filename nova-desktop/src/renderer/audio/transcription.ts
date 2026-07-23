@@ -139,6 +139,91 @@ export class WebSpeechTranscription implements TranscriptionService {
   }
 }
 
+/**
+ * Cloud (Whisper) implementation. Records the mic with `MediaRecorder` and
+ * hands the clip to the main process, which calls the transcription API. Unlike
+ * the streaming Web Speech recognizer this is record-then-transcribe: there are
+ * no interim results, and the utterance is finalised when {@link stop} is
+ * called. Reliable regardless of Electron's Web Speech support.
+ */
+export class WhisperTranscription implements TranscriptionService {
+  readonly supported = true
+  private recorder: MediaRecorder | null = null
+  private stream: MediaStream | null = null
+  private chunks: Blob[] = []
+  private handlers: TranscriptionHandlers = {}
+
+  /** Prefer a compressed format the transcription API accepts. */
+  private pickMimeType(): string | undefined {
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
+    return candidates.find((t) => MediaRecorder.isTypeSupported(t))
+  }
+
+  start(handlers: TranscriptionHandlers): void {
+    this.handlers = handlers
+    this.chunks = []
+    void this.begin()
+  }
+
+  private async begin(): Promise<void> {
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch {
+      this.handlers.onError?.('Microphone access was denied.')
+      this.handlers.onEnd?.()
+      return
+    }
+    const mimeType = this.pickMimeType()
+    const rec = new MediaRecorder(this.stream, mimeType ? { mimeType } : undefined)
+    rec.ondataavailable = (e) => {
+      if (e.data.size > 0) this.chunks.push(e.data)
+    }
+    rec.onstop = () => void this.finish()
+    this.recorder = rec
+    rec.start()
+  }
+
+  private releaseStream(): void {
+    this.stream?.getTracks().forEach((t) => t.stop())
+    this.stream = null
+  }
+
+  private async finish(): Promise<void> {
+    const mimeType = this.recorder?.mimeType || 'audio/webm'
+    const blob = new Blob(this.chunks, { type: mimeType })
+    this.recorder = null
+    this.releaseStream()
+
+    if (blob.size === 0) {
+      this.handlers.onEnd?.()
+      return
+    }
+    try {
+      const audio = await blob.arrayBuffer()
+      const { text } = await window.nova.transcription.transcribe(audio, mimeType)
+      if (text) this.handlers.onFinal?.(text.trim())
+    } catch (err) {
+      this.handlers.onError?.(err instanceof Error ? err.message : 'Transcription failed.')
+    } finally {
+      this.handlers.onEnd?.()
+    }
+  }
+
+  stop(): void {
+    if (this.recorder && this.recorder.state !== 'inactive') this.recorder.stop()
+  }
+
+  abort(): void {
+    if (this.recorder && this.recorder.state !== 'inactive') {
+      this.recorder.onstop = null
+      this.recorder.stop()
+    }
+    this.recorder = null
+    this.chunks = []
+    this.releaseStream()
+  }
+}
+
 /** Fallback when no recognizer is available — reports unsupported. */
 export class NullTranscription implements TranscriptionService {
   readonly supported = false
@@ -154,8 +239,19 @@ export class NullTranscription implements TranscriptionService {
   }
 }
 
-/** Factory: the single seam where the concrete STT backend is chosen. */
-export function createTranscription(): TranscriptionService {
-  const service = new WebSpeechTranscription()
-  return service.supported ? service : new NullTranscription()
+/**
+ * Factory: the single seam where the concrete STT backend is chosen.
+ *
+ * Prefers the cloud Whisper backend when it's configured (an API key is set in
+ * the main process), since it's reliable everywhere. Otherwise falls back to
+ * the browser's Web Speech recognizer, then to the no-op service. Async because
+ * the "is the cloud backend configured?" check crosses the IPC bridge.
+ */
+export async function createTranscription(): Promise<TranscriptionService> {
+  const bridge = typeof window !== 'undefined' ? window.nova?.transcription : undefined
+  if (bridge && (await bridge.isConfigured())) {
+    return new WhisperTranscription()
+  }
+  const webSpeech = new WebSpeechTranscription()
+  return webSpeech.supported ? webSpeech : new NullTranscription()
 }

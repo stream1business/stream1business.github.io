@@ -106,11 +106,15 @@ every change under `nova-desktop/`.
   `listening ↔ speaking` transitions from voice activity.
 - `src/renderer/audio/transcription.ts` — the **speech-to-text** hook point.
   The UI depends only on the `TranscriptionService` interface;
-  `createTranscription()` picks the backend. Today that's `WebSpeechTranscription`
-  (Chromium's built-in recognizer — no key, no extra deps), with a
-  `NullTranscription` fallback. A cloud backend (e.g. streaming the mic to
-  Whisper via the main process, exactly like the LLM backend) can implement the
-  same interface and be returned here — **no component or animation changes**.
+  `createTranscription()` picks the backend:
+  - `WhisperTranscription` — records the mic with `MediaRecorder` and sends the
+    clip to the main process (`src/main/transcription.ts`), which POSTs it to an
+    OpenAI-compatible `/audio/transcriptions` endpoint. Reliable everywhere; the
+    API key never leaves the main process. **Preferred when configured.**
+  - `WebSpeechTranscription` — Chromium's built-in recognizer (no key, no
+    network of ours; streams interim results). Used when Whisper isn't
+    configured.
+  - `NullTranscription` — no-op fallback that reports "unavailable".
 - `src/renderer/audio/useVoiceInput.ts` — the "talk to NOVA" hook: manages the
   transcription lifecycle, exposes the live interim transcript, and hands a
   finalised utterance to `useAssistant().ask()`, so **speech flows straight into
@@ -160,6 +164,18 @@ every change under `nova-desktop/`.
 **Enabling it:** set `ANTHROPIC_API_KEY` in the environment before launching
 (`ANTHROPIC_API_KEY=sk-ant-... npm run dev`). Without a key, NOVA runs in
 offline stub mode and says so — no crash, no config needed to try the UI.
+
+**Voice (Whisper) config:** to use the reliable cloud transcription backend,
+set an STT key. It targets an OpenAI-compatible endpoint, so it works with
+OpenAI Whisper by default or any compatible service (e.g. Groq) via env vars:
+
+| Env var             | Default                          | Purpose                          |
+|---------------------|----------------------------------|----------------------------------|
+| `NOVA_STT_API_KEY`  | falls back to `OPENAI_API_KEY`, then `GROQ_API_KEY` | the transcription API key |
+| `NOVA_STT_BASE_URL` | `https://api.openai.com/v1`      | OpenAI-compatible base URL       |
+| `NOVA_STT_MODEL`    | `whisper-1`                      | transcription model              |
+
+When no STT key is set, voice falls back to the browser's Web Speech recognizer.
 
 ---
 
