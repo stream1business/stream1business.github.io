@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * NOVA renderer base styles.
+ *
+ * The window itself is transparent (Electron `transparent: true`), so the
+ * document background MUST stay fully transparent — only the orb graphic is
+ * ever painted.
+ */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  /* Nothing is selectable/draggable by default; the ring opts back in. */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/*
+ * Orbitron is the intended wordmark font. If it isn't installed on the host,
+ * the stack falls back gracefully. To bundle it, drop the .woff2 files in
+ * resources/fonts and point the src below at them.
+ */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Orbitron'), local('Orbitron-Bold');
+}
+
+.nova-draggable {
+  /* Electron: makes the element a window-drag handle. */
+  -webkit-app-region: drag;
+}
+
+.nova-no-drag {
+  -webkit-app-region: no-drag;
+}
