@@ -47,8 +47,13 @@ npm install
 npm run dev      # launches the Electron app with hot reload
 ```
 
-Right-click the orb (or use the tray menu) to open settings, enable the
-microphone, switch themes, and drive the state machine manually.
+Right-click the orb (or use the tray menu) to open settings — enable the
+microphone, switch themes, tune sensitivities, drive the state machine, or type
+into **Ask NOVA** to run a message through the assistant backend (stubbed) and
+watch it move through `thinking → responding → listening`. Settings and tuning
+persist across restarts.
+
+Press **Ctrl/Cmd + Shift + Space** anywhere to show or hide the orb.
 
 ### Build a distributable
 
@@ -67,6 +72,8 @@ npm run build:mac        # or :win / :linux  (electron-builder)
   through the transparent corners to the desktop; the renderer re-enables
   hit-testing only while the pointer is over the ring.
 - `src/main/tray.ts` — minimal system-tray menu (quit, toggles, manual state).
+- `src/main/hotkeys.ts` — global shortcuts (Ctrl/Cmd+Shift+Space toggles the
+  orb's visibility); a seam for push-to-talk / wake-word bypass later.
 - `src/main/ipc.ts` + `src/preload/index.ts` — a narrow, typed `window.nova`
   bridge (contextIsolation on, nodeIntegration off).
 
@@ -94,9 +101,14 @@ npm run build:mac        # or :win / :linux  (electron-builder)
 
 ### State
 - `src/renderer/state/store.ts` — a single Zustand store holding
-  `assistantState`, `audioLevels`, `theme`, `settings`, and `personality`.
-  New features (hotkeys, wake-word, tray actions) subscribe here without
-  touching the render components.
+  `assistantState`, `audioLevels`, `theme`, `settings`, `personality`, and the
+  last assistant `exchange`. New features (hotkeys, wake-word, tray actions)
+  subscribe here without touching the render components. User-tunable slices
+  (`settings`, `personality`) are persisted to `localStorage` and restored on
+  launch — the write is guarded so the 60 fps audio updates never touch disk.
+- `src/renderer/state/useAssistant.ts` — the hook the **Ask NOVA** input calls;
+  it runs the prompt through the backend and lets the assistant drive the state
+  machine, keeping the UI decoupled from whatever backend is wired in.
 
 ### Config (not hardcoded)
 - `src/renderer/config/personality.config.ts` — tuning: rotation speeds,

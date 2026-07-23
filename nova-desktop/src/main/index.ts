@@ -2,9 +2,11 @@ import { app, BrowserWindow, Tray } from 'electron'
 import { createOrbWindow } from './window'
 import { createTray } from './tray'
 import { registerIpc } from './ipc'
+import { registerHotkeys } from './hotkeys'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
+let unregisterHotkeys: (() => void) | null = null
 
 const getWindow = (): BrowserWindow | null => mainWindow
 
@@ -27,6 +29,7 @@ if (!gotLock) {
     registerIpc(getWindow)
     mainWindow = createOrbWindow()
     tray = createTray(getWindow)
+    unregisterHotkeys = registerHotkeys(getWindow)
 
     mainWindow.on('closed', () => {
       mainWindow = null
@@ -45,6 +48,7 @@ if (!gotLock) {
   })
 
   app.on('before-quit', () => {
+    unregisterHotkeys?.()
     tray?.destroy()
   })
 }

@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNovaStore } from '@renderer/state/store'
+import { useAssistant } from '@renderer/state/useAssistant'
 import { themes } from '@renderer/config/themes'
 import type { AssistantState } from '@shared/types'
 
@@ -28,6 +30,15 @@ export function SettingsPanel({
   const updateSettings = useNovaStore((s) => s.updateSettings)
   const updatePersonality = useNovaStore((s) => s.updatePersonality)
   const setAssistantState = useNovaStore((s) => s.setAssistantState)
+  const lastExchange = useNovaStore((s) => s.lastExchange)
+
+  const { ask, busy } = useAssistant()
+  const [prompt, setPrompt] = useState('')
+
+  const submitPrompt = (): void => {
+    void ask(prompt)
+    setPrompt('')
+  }
 
   return (
     <AnimatePresence>
@@ -49,6 +60,37 @@ export function SettingsPanel({
             >
               ✕
             </button>
+          </div>
+
+          {/* Ask NOVA — exercises the assistant backend + state machine */}
+          <div className="mb-3">
+            <div className="mb-1 text-white/50">Ask NOVA</div>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={prompt}
+                disabled={busy}
+                placeholder={busy ? 'NOVA is thinking…' : 'Type a message…'}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') submitPrompt()
+                }}
+                className="min-w-0 flex-1 rounded bg-white/10 px-2 py-1 text-white placeholder-white/30 outline-none focus:bg-white/15 disabled:opacity-50"
+              />
+              <button
+                onClick={submitPrompt}
+                disabled={busy || prompt.trim().length === 0}
+                className="rounded bg-nova-teal/30 px-2 py-1 hover:bg-nova-teal/50 disabled:opacity-40"
+              >
+                Send
+              </button>
+            </div>
+            {lastExchange && (
+              <div className="mt-2 rounded bg-white/5 p-2 text-white/70">
+                <div className="truncate text-white/40">“{lastExchange.prompt}”</div>
+                <div className="mt-0.5 text-nova-glow">{lastExchange.reply}</div>
+              </div>
+            )}
           </div>
 
           {/* Microphone */}
