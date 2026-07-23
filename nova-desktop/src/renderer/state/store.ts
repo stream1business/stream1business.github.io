@@ -21,6 +21,8 @@ export interface Settings {
   themeKey: string
   /** Whether the mic should be captured on launch. */
   micEnabled: boolean
+  /** Whether NOVA speaks its replies aloud. */
+  voiceReplies: boolean
 }
 
 /** One turn in the (stubbed) conversation with NOVA. */
@@ -70,7 +72,8 @@ const defaultSettings: Settings = {
   alwaysOnTop: true,
   clickThrough: true,
   themeKey: personalityConfig.colorTheme,
-  micEnabled: false
+  micEnabled: false,
+  voiceReplies: true
 }
 
 // --------------------------------------------------------------- persistence ---

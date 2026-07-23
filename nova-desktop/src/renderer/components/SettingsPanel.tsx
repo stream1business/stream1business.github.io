@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useNovaStore } from '@renderer/state/store'
 import { useAssistant } from '@renderer/state/useAssistant'
 import { useVoiceInput } from '@renderer/audio/useVoiceInput'
+import { getSpeechService } from '@renderer/audio/speech'
 import { themes } from '@renderer/config/themes'
 import type { AssistantState } from '@shared/types'
 
@@ -154,6 +155,31 @@ export function SettingsPanel({
                 Enable
               </button>
             )}
+          </Row>
+
+          {/* Spoken replies */}
+          <Row label="Speak replies">
+            <div className="flex items-center gap-2">
+              {assistantState === 'responding' && settings.voiceReplies && (
+                <button
+                  className="rounded bg-red-500/30 px-2 py-1 hover:bg-red-500/50"
+                  onClick={() => {
+                    getSpeechService().cancel()
+                    setAssistantState('listening')
+                  }}
+                >
+                  Stop
+                </button>
+              )}
+              <input
+                type="checkbox"
+                checked={settings.voiceReplies}
+                onChange={(e) => {
+                  if (!e.target.checked) getSpeechService().cancel()
+                  updateSettings({ voiceReplies: e.target.checked })
+                }}
+              />
+            </div>
           </Row>
 
           {/* Theme */}

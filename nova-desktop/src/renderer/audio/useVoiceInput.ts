@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createTranscription, type TranscriptionService } from './transcription'
+import { getSpeechService } from './speech'
 import { useNovaStore } from '@renderer/state/store'
 
 /**
@@ -60,6 +61,7 @@ export function useVoiceInput(onFinal: (text: string) => void): {
   const start = useCallback(() => {
     const service = serviceRef.current
     if (!service || listening || transcribing) return
+    getSpeechService().cancel() // barge-in: stop NOVA speaking when you start talking
     setError(null)
     setInterim('')
     setListening(true)

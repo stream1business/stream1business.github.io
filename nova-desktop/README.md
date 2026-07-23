@@ -50,11 +50,11 @@ npm run dev      # launches the Electron app with hot reload
 
 Right-click the orb (or use the tray menu) to open settings — enable the
 microphone, switch themes, tune sensitivities, drive the state machine, or type
-into **Ask NOVA** — or tap the **🎙 mic button and speak** — to talk to Claude
-and watch the reply stream in as the ring moves through
-`thinking → responding → listening`. Set `ANTHROPIC_API_KEY` for real replies
-(see below); without it NOVA runs in offline stub mode. Settings and tuning
-persist across restarts.
+into **Ask NOVA** — or tap the **🎙 mic button and speak** — to talk to Claude,
+watch the reply stream in, and **hear NOVA speak it aloud** as the ring moves
+through `thinking → responding → listening`. Set `ANTHROPIC_API_KEY` for real
+replies (see below); without it NOVA runs in offline stub mode. Settings and
+tuning persist across restarts.
 
 Press **Ctrl/Cmd + Shift + Space** anywhere to show or hide the orb.
 
@@ -119,6 +119,12 @@ every change under `nova-desktop/`.
   transcription lifecycle, exposes the live interim transcript, and hands a
   finalised utterance to `useAssistant().ask()`, so **speech flows straight into
   Claude** and the orb runs `listening → thinking → responding`.
+- `src/renderer/audio/speech.ts` — the **text-to-speech** service. NOVA speaks
+  each reply aloud via the platform's `speechSynthesis` (offline, no key, works
+  in Electron), while the orb holds `responding`. A process-wide singleton
+  enables **barge-in** — asking again or opening the mic cancels current speech.
+  Toggle it with **Speak replies** in settings. A cloud TTS backend can slot in
+  behind the same `SpeechService` interface.
 
 ### Animation
 - `src/renderer/animation/glow.ts` — pure functions mapping audio + state →

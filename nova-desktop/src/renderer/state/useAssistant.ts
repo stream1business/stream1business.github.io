@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { createAssistant } from '@services/assistant'
+import { getSpeechService } from '@renderer/audio/speech'
 import { useNovaStore } from './store'
 
 /**
@@ -20,12 +21,17 @@ export function useAssistant(): {
   const setAssistantState = useNovaStore((s) => s.setAssistantState)
   const setLastExchange = useNovaStore((s) => s.setLastExchange)
   const setStreamingReply = useNovaStore((s) => s.setStreamingReply)
+  const voiceReplies = useNovaStore((s) => s.settings.voiceReplies)
   const [busy, setBusy] = useState(false)
 
   const ask = useCallback(
     async (text: string) => {
       const prompt = text.trim()
       if (!prompt || busy) return
+
+      const speech = getSpeechService()
+      speech.cancel() // barge-in: stop any reply NOVA is still speaking
+
       setBusy(true)
       setStreamingReply('')
       try {
@@ -34,6 +40,13 @@ export function useAssistant(): {
           onDelta: (full) => setStreamingReply(full)
         })
         setLastExchange({ prompt, reply: reply.text })
+
+        // Speak the reply aloud, holding the orb in `responding` until done.
+        if (voiceReplies && reply.text && speech.supported) {
+          setAssistantState('responding')
+          await speech.speak(reply.text)
+        }
+        setAssistantState('listening')
       } catch (err) {
         setLastExchange({
           prompt,
@@ -45,7 +58,7 @@ export function useAssistant(): {
         setBusy(false)
       }
     },
-    [busy, setAssistantState, setLastExchange, setStreamingReply]
+    [busy, voiceReplies, setAssistantState, setLastExchange, setStreamingReply]
   )
 
   return { ask, busy }
