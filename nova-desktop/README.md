@@ -109,10 +109,20 @@ Font License 1.1 (see `src/renderer/fonts/OFL.txt`).
 
 ## App icon
 
-The application icon is the NOVA ring mark on a dark rounded tile
-(`resources/icon.png` · `.ico` · `.icns`), wired into `electron-builder.yml`
-per platform (Linux → png, Windows → ico, macOS → icns). The same PNG is
-downscaled at runtime for the system-tray glyph.
+The application icon is the NOVA ring mark on a dark rounded tile, wired into
+`electron-builder.yml` per platform (Linux → png, Windows → ico, macOS → icns).
+
+It comes in two renderings that share one palette:
+
+- **detailed** (`resources/icon.png`, 1024²) — braided ring, stardust, layered
+  glow; used at large sizes.
+- **flat** (`resources/icon-small.png`, 512²) — a single smooth gradient ring
+  with a thick stroke and minimal glow, so it stays legible at 16–32px where
+  the detailed art turns to mush. Used for the system-tray glyph.
+
+The Windows `resources/icon.ico` is a multi-image container: the flat art fills
+the 16/24/32/48px frames and the detailed art the 64/128/256px frames, so each
+size shows the rendering that reads best.
 
 The icons are generated from a single script and committed, so packaging never
 depends on the generator:

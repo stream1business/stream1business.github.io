@@ -2,8 +2,9 @@ import { Tray, Menu, BrowserWindow, app, nativeImage } from 'electron'
 import type { AssistantState } from '../shared/types'
 import { sendSetState } from './ipc'
 // electron-vite copies this asset into the build and rewrites the path so it
-// resolves in both `dev` and packaged builds.
-import trayIconPath from '../../resources/icon.png?asset'
+// resolves in both `dev` and packaged builds. Use the flat variant — the tray
+// renders at ~16-18px where the detailed braided art turns to mush.
+import trayIconPath from '../../resources/icon-small.png?asset'
 
 /**
  * Builds a minimal system-tray menu. Because the window is frameless and
