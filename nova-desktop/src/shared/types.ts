@@ -79,6 +79,36 @@ export interface TranscriptionBridge {
   transcribe: (audio: ArrayBuffer, mimeType: string) => Promise<TranscriptionResult>
 }
 
+/** The secrets NOVA can store: the Claude key and the speech-to-text key. */
+export type SecretName = 'anthropic' | 'stt'
+
+/** Configuration state of one secret (never carries the value itself). */
+export interface SecretState {
+  /** Whether a usable key is available (stored or from the environment). */
+  configured: boolean
+  /** Whether a key is stored on disk (encrypted). */
+  stored: boolean
+  /** Whether a key is coming from an environment variable. */
+  fromEnv: boolean
+}
+
+export interface SecretsStatus {
+  anthropic: SecretState
+  stt: SecretState
+  /** Whether the OS keychain is available to encrypt stored keys at rest. */
+  encryptionAvailable: boolean
+}
+
+/**
+ * Secure key storage, proxied to the main process. Keys are written to disk
+ * encrypted (Electron `safeStorage` / OS keychain) and are **never** returned
+ * to the renderer — only their configuration status is.
+ */
+export interface SecretsBridge {
+  status: () => Promise<SecretsStatus>
+  set: (name: SecretName, value: string) => Promise<SecretsStatus>
+}
+
 /** Channels exposed by the preload bridge on `window.nova`. */
 export interface NovaBridge {
   /** Ask the main process to quit the app. */
@@ -93,6 +123,8 @@ export interface NovaBridge {
   assistant: AssistantBridge
   /** The cloud speech-to-text backend, proxied to the main process. */
   transcription: TranscriptionBridge
+  /** Secure API-key storage, proxied to the main process. */
+  secrets: SecretsBridge
   /** Report the current platform (win32 / darwin / linux). */
   platform: string
 }

@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron'
+import { getEffectiveKey } from './secrets'
 
 /**
  * Main-process speech-to-text backend.
@@ -16,12 +17,9 @@ import { ipcMain } from 'electron'
  */
 
 function sttKey(): string {
-  return (
-    process.env.NOVA_STT_API_KEY ??
-    process.env.OPENAI_API_KEY ??
-    process.env.GROQ_API_KEY ??
-    ''
-  )
+  // A stored key (from Settings) wins; otherwise the NOVA_STT_API_KEY /
+  // OPENAI_API_KEY / GROQ_API_KEY env vars (resolved in secrets.ts).
+  return getEffectiveKey('stt')
 }
 
 /** Map a recorder MIME type to a file extension the API will accept. */

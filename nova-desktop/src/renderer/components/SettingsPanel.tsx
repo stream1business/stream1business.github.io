@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNovaStore } from '@renderer/state/store'
 import { useAssistant } from '@renderer/state/useAssistant'
 import { useVoiceInput } from '@renderer/audio/useVoiceInput'
 import { getSpeechService } from '@renderer/audio/speech'
 import { themes } from '@renderer/config/themes'
-import type { AssistantState } from '@shared/types'
+import type { AssistantState, SecretName, SecretState, SecretsStatus } from '@shared/types'
 
 /**
  * Minimal settings / control panel, opened by right-clicking the orb.
@@ -47,6 +47,16 @@ export function SettingsPanel({
   const submitPrompt = (): void => {
     void ask(prompt)
     setPrompt('')
+  }
+
+  // API keys stored securely by the main process.
+  const [keysOpen, setKeysOpen] = useState(false)
+  const [secrets, setSecrets] = useState<SecretsStatus | null>(null)
+  useEffect(() => {
+    void window.nova?.secrets?.status().then(setSecrets)
+  }, [])
+  const saveKey = async (name: SecretName, value: string): Promise<void> => {
+    setSecrets(await window.nova.secrets.set(name, value))
   }
 
   return (
@@ -182,6 +192,38 @@ export function SettingsPanel({
             </div>
           </Row>
 
+          {/* API keys — stored securely by the main process */}
+          <div className="mb-3">
+            <button
+              className="mb-1 flex w-full items-center justify-between text-white/50 hover:text-white/80"
+              onClick={() => setKeysOpen((o) => !o)}
+            >
+              <span>API keys</span>
+              <span>{keysOpen ? '▾' : '▸'}</span>
+            </button>
+            {keysOpen && (
+              <div className="space-y-2 rounded bg-white/5 p-2">
+                <KeyField
+                  label="Claude (Anthropic)"
+                  placeholder="sk-ant-…"
+                  state={secrets?.anthropic}
+                  onSave={(v) => saveKey('anthropic', v)}
+                />
+                <KeyField
+                  label="Voice / Whisper"
+                  placeholder="sk-… (OpenAI or compatible)"
+                  state={secrets?.stt}
+                  onSave={(v) => saveKey('stt', v)}
+                />
+                <div className="text-[10px] leading-snug text-white/40">
+                  {secrets && !secrets.encryptionAvailable
+                    ? 'Stored locally (OS keychain unavailable — not encrypted at rest).'
+                    : 'Stored encrypted via your OS keychain. Reopen settings after adding the voice key.'}
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Theme */}
           <Row label="Theme">
             <select
@@ -281,6 +323,64 @@ function Row({ label, children }: { label: string; children: React.ReactNode }):
     <div className="mb-2 flex items-center justify-between">
       <span className="text-white/60">{label}</span>
       {children}
+    </div>
+  )
+}
+
+function KeyField({
+  label,
+  placeholder,
+  state,
+  onSave
+}: {
+  label: string
+  placeholder: string
+  state?: SecretState
+  onSave: (value: string) => void | Promise<void>
+}): JSX.Element {
+  const [value, setValue] = useState('')
+  const badge = state?.stored ? 'Stored' : state?.fromEnv ? 'From env' : 'Not set'
+  const commit = (): void => {
+    if (value.trim().length === 0) return
+    void onSave(value)
+    setValue('')
+  }
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className="text-white/60">{label}</span>
+        <span className={`font-mono text-[10px] ${state?.configured ? 'text-nova-teal' : 'text-white/40'}`}>
+          {badge}
+        </span>
+      </div>
+      <div className="flex gap-1">
+        <input
+          type="password"
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') commit()
+          }}
+          className="min-w-0 flex-1 rounded bg-white/10 px-2 py-1 text-white placeholder-white/30 outline-none focus:bg-white/15"
+        />
+        <button
+          disabled={value.trim().length === 0}
+          onClick={commit}
+          className="rounded bg-nova-teal/30 px-2 py-1 hover:bg-nova-teal/50 disabled:opacity-40"
+        >
+          Save
+        </button>
+        {state?.stored && (
+          <button
+            title="Clear stored key"
+            onClick={() => void onSave('')}
+            className="rounded bg-white/10 px-2 py-1 hover:bg-white/20"
+          >
+            ✕
+          </button>
+        )}
+      </div>
     </div>
   )
 }

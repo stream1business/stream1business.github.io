@@ -5,6 +5,8 @@ import type {
   AssistantSendHandlers,
   AssistantState,
   NovaBridge,
+  SecretName,
+  SecretsStatus,
   TranscriptionResult
 } from '../shared/types'
 
@@ -41,6 +43,11 @@ const bridge: NovaBridge = {
     isConfigured: () => ipcRenderer.invoke('nova:transcription-configured') as Promise<boolean>,
     transcribe: (audio: ArrayBuffer, mimeType: string) =>
       ipcRenderer.invoke('nova:transcribe', { audio, mimeType }) as Promise<TranscriptionResult>
+  },
+  secrets: {
+    status: () => ipcRenderer.invoke('nova:secrets-status') as Promise<SecretsStatus>,
+    set: (name: SecretName, value: string) =>
+      ipcRenderer.invoke('nova:secrets-set', { name, value }) as Promise<SecretsStatus>
   },
   platform: process.platform
 }

@@ -194,9 +194,16 @@ every change under `nova-desktop/`.
   the panel live, and drive the state machine (`thinking → responding →
   listening`).
 
-**Enabling it:** set `ANTHROPIC_API_KEY` in the environment before launching
-(`ANTHROPIC_API_KEY=sk-ant-... npm run dev`). Without a key, NOVA runs in
-offline stub mode and says so — no crash, no config needed to try the UI.
+**Enabling it — two ways:**
+1. **In the app (recommended for the installed build):** open Settings →
+   **API keys** and paste your Claude key. It's stored encrypted via your OS
+   keychain (`src/main/secrets.ts`, Electron `safeStorage`) and never leaves the
+   main process. This is what makes the packaged, double-clicked app
+   self-contained — no environment variables needed.
+2. **Environment variable (handy for `npm run dev`):** `ANTHROPIC_API_KEY=sk-ant-... npm run dev`.
+
+A stored key wins over the env var. Without either, NOVA runs in offline stub
+mode and says so — no crash, no config needed to try the UI.
 
 **Voice (Whisper) config:** to use the reliable cloud transcription backend,
 set an STT key. It targets an OpenAI-compatible endpoint, so it works with
@@ -208,7 +215,9 @@ OpenAI Whisper by default or any compatible service (e.g. Groq) via env vars:
 | `NOVA_STT_BASE_URL` | `https://api.openai.com/v1`      | OpenAI-compatible base URL       |
 | `NOVA_STT_MODEL`    | `whisper-1`                      | transcription model              |
 
-When no STT key is set, voice falls back to the browser's Web Speech recognizer.
+Or paste the voice key in Settings → **API keys** → *Voice / Whisper* (stored
+encrypted, same as the Claude key). When no STT key is set, voice falls back to
+the browser's Web Speech recognizer.
 
 ---
 

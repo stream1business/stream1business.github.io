@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { ipcMain } from 'electron'
+import { getEffectiveKey } from './secrets'
 import type { AssistantMessage } from '../shared/types'
 
 /**
@@ -21,11 +22,20 @@ something, say so plainly.`
 const MODEL = 'claude-opus-4-8'
 
 let client: Anthropic | null = null
+let clientKey = ''
 
-/** Lazily construct the client; returns null when no API key is configured. */
+/**
+ * Construct (or reuse) the client for the current effective key. Returns null
+ * when no key is configured. Rebuilds if the key changed at runtime (e.g. the
+ * user just entered one in Settings).
+ */
 function getClient(): Anthropic | null {
-  if (!process.env.ANTHROPIC_API_KEY) return null
-  if (!client) client = new Anthropic() // reads ANTHROPIC_API_KEY from the env
+  const key = getEffectiveKey('anthropic')
+  if (!key) return null
+  if (!client || clientKey !== key) {
+    client = new Anthropic({ apiKey: key })
+    clientKey = key
+  }
   return client
 }
 

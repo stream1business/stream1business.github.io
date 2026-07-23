@@ -5,6 +5,7 @@ import { registerIpc } from './ipc'
 import { registerHotkeys } from './hotkeys'
 import { registerAssistantIpc } from './assistant'
 import { registerTranscriptionIpc } from './transcription'
+import { registerSecretsIpc } from './secrets'
 import { initAutoUpdater } from './updater'
 
 let mainWindow: BrowserWindow | null = null
@@ -36,6 +37,7 @@ if (!gotLock) {
     })
 
     registerIpc(getWindow)
+    registerSecretsIpc()
     registerAssistantIpc()
     registerTranscriptionIpc()
     mainWindow = createOrbWindow()
