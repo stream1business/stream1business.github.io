@@ -5,6 +5,7 @@ import { registerIpc } from './ipc'
 import { registerHotkeys } from './hotkeys'
 import { registerAssistantIpc } from './assistant'
 import { registerTranscriptionIpc } from './transcription'
+import { initAutoUpdater } from './updater'
 
 let mainWindow: BrowserWindow | null = null
 let tray: Tray | null = null
@@ -40,6 +41,7 @@ if (!gotLock) {
     mainWindow = createOrbWindow()
     tray = createTray(getWindow)
     unregisterHotkeys = registerHotkeys(getWindow)
+    initAutoUpdater()
 
     mainWindow.on('closed', () => {
       mainWindow = null

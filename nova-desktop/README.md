@@ -58,12 +58,39 @@ tuning persist across restarts.
 
 Press **Ctrl/Cmd + Shift + Space** anywhere to show or hide the orb.
 
-### Build a distributable
+### Package for distribution
 
 ```bash
-npm run build            # typecheck + bundle main/preload/renderer
-npm run build:mac        # or :win / :linux  (electron-builder)
+npm run build            # typecheck + bundle main/preload/renderer only
+npm run pack             # build + an unpacked app in dist/ (fast smoke test)
+npm run dist             # build + installers for the current OS
+npm run build:mac        # force a specific target: :mac / :win / :linux
 ```
+
+`electron-builder` (config in `electron-builder.yml`) writes to `dist/`:
+
+| Platform | Output |
+|----------|--------|
+| macOS    | `NOVA-<version>.dmg` + a `.zip` (the zip lets the in-app updater patch) |
+| Windows  | `nova-desktop-assistant-<version>-setup.exe` (NSIS; user picks the install dir, desktop + start-menu shortcuts) |
+| Linux    | `NOVA-<version>.AppImage` (portable, self-contained) |
+
+Only the app bundle (`out/`) and production dependencies ship — the Anthropic
+SDK is externalized so it's included, while Vite-bundled UI libs
+(React, Framer Motion, Zustand) are dev-only and pruned. Each OS's installer
+must be built **on that OS** (electron-builder doesn't cross-compile installers).
+
+**Code signing / notarization:** builds are unsigned by default, so macOS
+Gatekeeper and Windows SmartScreen will warn on first launch. To sign, provide
+the usual electron-builder credentials (`CSC_LINK` / `CSC_KEY_PASSWORD` on
+Windows/macOS, plus `APPLE_ID` / `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID`
+for macOS notarization) — no config change needed.
+
+**Auto-update:** `src/main/updater.ts` checks for updates on launch in packaged
+builds (via `electron-updater`, feed configured in `electron-builder.yml` →
+`publish`). It's fully defensive — a no-op in development and silent if the feed
+is unreachable — so it never interrupts the assistant. Ship updates by
+publishing a GitHub release with the generated artifacts.
 
 ### Test
 

@@ -1,31 +1,73 @@
 appId: com.stream1business.nova
 productName: NOVA
+copyright: Copyright © 2026 Stream1 Business
+
 directories:
   buildResources: resources
   output: dist
+
+# Include the built app + production node_modules; drop source and tooling.
+# electron-builder auto-prunes devDependencies from node_modules.
 files:
-  - '!**/.vscode/*'
-  - '!src/*'
+  - '!src'
+  - '!scripts'
+  - '!preview'
+  - '!**/*.map'
+  - '!*.md'
   - '!electron.vite.config.{js,ts,mjs,cjs}'
-  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
-  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!vitest.config.{js,ts,mjs,cjs}'
+  - '!tsconfig*.json'
+  - '!postcss.config.js'
+  - '!tailwind.config.js'
+  - '!electron-builder.yml'
+  - '!.gitignore'
+
 asarUnpack:
   - resources/**
+
+# Update feed. electron-builder writes app-update.yml from this so the
+# in-app updater knows where to look; publishing itself is opt-in (the build
+# scripts pass --publish never). Releases are expected on the GitHub repo.
+publish:
+  provider: github
+  owner: stream1business
+  repo: stream1business.github.io
+
 win:
   icon: resources/icon.ico
   target:
     - nsis
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: ${productName}
+  artifactName: ${name}-${version}-setup.${ext}
+
 mac:
   icon: resources/icon.icns
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  # dmg for install, zip so the in-app updater can patch on macOS.
   target:
     - dmg
-  category: public.app-category.productivity
+    - zip
+
+dmg:
+  artifactName: ${name}-${version}.${ext}
+
 linux:
   icon: resources/icon.png
+  category: Utility
+  synopsis: Voice-reactive desktop AI assistant orb
+  maintainer: Stream1 Business <j.rod3073@gmail.com>
+  desktop:
+    Name: NOVA
+    Comment: Voice-reactive desktop AI assistant orb
+    Categories: Utility;AudioVideo;
   target:
     - AppImage
-  category: Utility
-nsis:
-  artifactName: ${name}-${version}-setup.${ext}
-  shortcutName: ${productName}
