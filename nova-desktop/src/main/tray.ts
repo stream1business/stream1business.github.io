@@ -1,6 +1,9 @@
 import { Tray, Menu, BrowserWindow, app, nativeImage } from 'electron'
 import type { AssistantState } from '../shared/types'
 import { sendSetState } from './ipc'
+// electron-vite copies this asset into the build and rewrites the path so it
+// resolves in both `dev` and packaged builds.
+import trayIconPath from '../../resources/icon.png?asset'
 
 /**
  * Builds a minimal system-tray menu. Because the window is frameless and
@@ -9,9 +12,8 @@ import { sendSetState } from './ipc'
  * (handy for demoing `thinking` / `responding` without a backend).
  */
 export function createTray(getWindow: () => BrowserWindow | null): Tray {
-  // A 1x1 transparent image keeps this dependency-free; replace with a real
-  // icon in resources/ for production packaging.
-  const icon = nativeImage.createEmpty()
+  // The full-resolution app icon, downscaled to a crisp tray glyph.
+  const icon = nativeImage.createFromPath(trayIconPath).resize({ width: 18, height: 18 })
   const tray = new Tray(icon)
   tray.setToolTip('NOVA')
 

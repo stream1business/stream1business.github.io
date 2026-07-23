@@ -107,6 +107,23 @@ A graceful fallback stack (`Michroma`, `Rajdhani`, `sans-serif`) covers the
 unlikely case the font fails to load. Orbitron is licensed under the SIL Open
 Font License 1.1 (see `src/renderer/fonts/OFL.txt`).
 
+## App icon
+
+The application icon is the NOVA ring mark on a dark rounded tile
+(`resources/icon.png` · `.ico` · `.icns`), wired into `electron-builder.yml`
+per platform (Linux → png, Windows → ico, macOS → icns). The same PNG is
+downscaled at runtime for the system-tray glyph.
+
+The icons are generated from a single script and committed, so packaging never
+depends on the generator:
+
+```bash
+npm run icon    # regenerates resources/icon.{png,ico,icns}  (requires Pillow)
+```
+
+Edit `scripts/generate-icon.py` (it reuses the brand palette) and re-run to
+tweak the mark.
+
 ## Future expansion (designed in, not bolted on)
 
 - **Voice pipeline:** tap `AudioEngine.stream` for STT — analysis code is
