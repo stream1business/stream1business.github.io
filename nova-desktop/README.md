@@ -12,6 +12,26 @@ external services are required for this build.
 
 ---
 
+## Browser preview (no install)
+
+Don't want to install Electron just to see the orb? Open
+[`preview/index.html`](preview/index.html) directly in any browser. It's a
+single self-contained file (the Orbitron font is inlined) that ports the real
+render layer — the same canvas ring, glow math, pulse spring, rotation, and
+state machine.
+
+- **Enable microphone** to drive the ring live from your voice, or **Play demo
+  voice** for a synthetic speech envelope that exercises the same pipeline
+  (handy when a sandboxed frame blocks the mic).
+- Flip through the `idle / listening / speaking / thinking / responding`
+  states, swap themes, and tune pulse/glow/smoothing live.
+
+Only the desktop-specific pieces (transparent always-on-top window,
+click-through, tray, drag) are absent — those exist solely in the Electron
+build below.
+
+---
+
 ## Quick start
 
 ```bash
