@@ -1,0 +1,43 @@
+# Cross-platform packaging config for NOVA.
+# Targets macOS, Windows and Linux from the same codebase via `npm run package`.
+appId: com.stream1business.nova
+productName: NOVA
+copyright: Copyright © 2026 Stream1 Business
+
+directories:
+  buildResources: resources
+  output: release
+
+files:
+  - out/**/*
+  - '!**/*.map'
+
+extraResources:
+  - from: resources
+    to: .
+    filter:
+      - '**/*'
+
+asar: true
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - dmg
+    - zip
+  # A floating utility HUD reads best as an accessory (no dock icon) — flip to
+  # false if you want NOVA to appear in the dock.
+  extendInfo:
+    LSUIElement: true
+    NSMicrophoneUsageDescription: NOVA uses your microphone to react to your voice.
+
+win:
+  target:
+    - nsis
+    - portable
+
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility

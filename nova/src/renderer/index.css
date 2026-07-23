@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fully transparent window so the orb floats directly on the desktop. */
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  /* Prevent the whole window from being text-selectable / dragging images. */
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* The orb is the drag handle; interactive controls opt out with no-drag. */
+.orb-hit:active {
+  cursor: grabbing;
+}
+
+/* Respect users who prefer reduced motion — the JS loops still run but we can
+   tone down CSS-driven transitions here if added later. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}
