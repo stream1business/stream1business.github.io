@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Orbitron / Michroma / Rajdhani are bundled under /resources/fonts and
+ * referenced here. If the font files are not present, the display stack falls
+ * back to the system sans-serif so the app still runs. Drop the .woff2 files in
+ * to get the exact reference look.
+ */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Orbitron'), url('../../resources/fonts/Orbitron-Bold.woff2') format('woff2');
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Fully transparent window — only the orb graphic paints. */
+body {
+  background: transparent;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Window drag regions. The orb is draggable; controls opt back out. */
+.app-drag {
+  -webkit-app-region: drag;
+}
+
+.no-drag,
+button,
+input,
+select,
+a {
+  -webkit-app-region: no-drag;
+}
