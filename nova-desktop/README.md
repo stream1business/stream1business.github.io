@@ -62,6 +62,21 @@ npm run build            # typecheck + bundle main/preload/renderer
 npm run build:mac        # or :win / :linux  (electron-builder)
 ```
 
+### Test
+
+```bash
+npm test                 # run the unit suite once (Vitest)
+npm run test:watch       # re-run on change
+```
+
+The suite covers the pure core the whole product rests on — the audio DSP
+(`audio/signal.ts`: RMS loudness, EMA smoothing, syllable-onset detection with
+its refractory guard, band energy) and the animation math (`animation/glow.ts`,
+`animation/rotation.ts`) — plus theme resolution. It runs in plain Node with no
+Electron, Web Audio, or DOM, so it's fast and CI-friendly; a GitHub Actions
+workflow (`.github/workflows/nova-desktop-ci.yml`) runs typecheck + tests on
+every change under `nova-desktop/`.
+
 ---
 
 ## How it works

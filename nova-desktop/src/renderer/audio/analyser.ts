@@ -1,4 +1,5 @@
 import type { AudioLevels } from '@shared/types'
+import { EnvelopeTracker, computeBands, rmsFromTimeDomain } from './signal'
 
 /**
  * Wraps a Web Audio `AnalyserNode` and turns raw frequency data into the
@@ -22,10 +23,8 @@ export class AudioEngine {
   private freqData: Uint8Array<ArrayBuffer> = new Uint8Array(new ArrayBuffer(0))
   private timeData: Uint8Array<ArrayBuffer> = new Uint8Array(new ArrayBuffer(0))
 
-  /** Smoothed RMS envelope (exponential moving average). */
-  private emaRms = 0
-  /** Refractory guard so a single onset doesn't fire many peaks. */
-  private peakCooldown = 0
+  /** Smoothed-envelope + onset detector (pure DSP, see signal.ts). */
+  private envelope = new EnvelopeTracker()
 
   /** The live microphone stream — exposed for future STT consumers. */
   public stream: MediaStream | null = null
@@ -81,55 +80,12 @@ export class AudioEngine {
     this.analyser.getByteFrequencyData(this.freqData)
     this.analyser.getByteTimeDomainData(this.timeData)
 
-    // --- RMS from the time-domain signal (true loudness) ---
-    let sumSquares = 0
-    for (let i = 0; i < this.timeData.length; i++) {
-      const centred = (this.timeData[i] - 128) / 128 // -1..1
-      sumSquares += centred * centred
-    }
-    const rawRms = Math.min(1, Math.sqrt(sumSquares / this.timeData.length) * 3)
+    // True loudness, then smooth + onset-detect, then band energy — all pure.
+    const rawRms = rmsFromTimeDomain(this.timeData)
+    const { rms, peak } = this.envelope.update(rawRms, this.options)
+    const bands = computeBands(this.freqData)
 
-    // --- Exponential moving average so glow breathes, not flickers ---
-    const a = this.options.smoothingFactor
-    this.emaRms = a * rawRms + (1 - a) * this.emaRms
-
-    // --- Onset / syllable-peak detection on the envelope ---
-    let peak = false
-    if (this.peakCooldown > 0) this.peakCooldown--
-    const overshoot = rawRms - this.emaRms
-    if (
-      this.peakCooldown === 0 &&
-      this.emaRms > 0.04 &&
-      overshoot > this.options.peakThreshold * this.emaRms
-    ) {
-      peak = true
-      this.peakCooldown = 6 // frames of refractory period
-    }
-
-    // --- Coarse 3-band frequency energy for extra visual texture ---
-    const bands = this.computeBands()
-
-    return { rms: this.emaRms, rawRms, peak, bands }
-  }
-
-  private computeBands(): { low: number; mid: number; high: number } {
-    const n = this.freqData.length
-    if (n === 0) return { low: 0, mid: 0, high: 0 }
-    const lowEnd = Math.floor(n * 0.1)
-    const midEnd = Math.floor(n * 0.4)
-
-    const avg = (from: number, to: number): number => {
-      let sum = 0
-      for (let i = from; i < to; i++) sum += this.freqData[i]
-      const count = Math.max(1, to - from)
-      return sum / count / 255
-    }
-
-    return {
-      low: avg(0, lowEnd),
-      mid: avg(lowEnd, midEnd),
-      high: avg(midEnd, n)
-    }
+    return { rms, rawRms, peak, bands }
   }
 
   /** Release the mic and tear down the audio graph. */
@@ -142,7 +98,6 @@ export class AudioEngine {
     this.analyser = null
     this.source = null
     this.stream = null
-    this.emaRms = 0
-    this.peakCooldown = 0
+    this.envelope.reset()
   }
 }
