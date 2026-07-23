@@ -14,11 +14,18 @@ external services are required for this build.
 
 ## Browser preview (no install)
 
-Don't want to install Electron just to see the orb? Open
-[`preview/index.html`](preview/index.html) directly in any browser. It's a
-single self-contained file (the Orbitron font is inlined) that ports the real
-render layer — the same canvas ring, glow math, pulse spring, rotation, and
-state machine.
+Don't want to install Electron just to see the orb? Two self-contained pages
+(the Orbitron font is inlined in each) port the real render layer — the same
+canvas ring, glow math, pulse spring, rotation, and state machine:
+
+- [`preview/index.html`](preview/index.html) — the **instrument console**: every
+  control and readout laid out for inspecting the animation.
+- [`preview/live.html`](preview/live.html) — the **live rendition**: a
+  full-screen, cinematic presentation with the orb filling the frame, a silent
+  ambient "living glow" that autoplays on load, and a minimal control dock that
+  dims out of the way.
+
+Both work the same way under the hood:
 
 - **Enable microphone** to drive the ring live from your voice, or **Play demo
   voice** for a synthetic speech envelope that exercises the same pipeline
