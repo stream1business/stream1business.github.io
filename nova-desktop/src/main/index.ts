@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray } from 'electron'
+import { app, BrowserWindow, Tray, session } from 'electron'
 import { createOrbWindow } from './window'
 import { createTray } from './tray'
 import { registerIpc } from './ipc'
@@ -26,6 +26,12 @@ if (!gotLock) {
   app.whenReady().then(() => {
     // Hide the dock icon on macOS — NOVA lives in the tray + floating orb.
     if (process.platform === 'darwin') app.dock?.hide()
+
+    // Grant the microphone to our own content — needed by the reactive analyser
+    // and by voice input. This is a local, self-contained app, so auto-approve.
+    session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
+      callback(permission === 'media')
+    })
 
     registerIpc(getWindow)
     registerAssistantIpc()

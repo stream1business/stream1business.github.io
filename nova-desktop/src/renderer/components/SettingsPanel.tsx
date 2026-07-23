@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useNovaStore } from '@renderer/state/store'
 import { useAssistant } from '@renderer/state/useAssistant'
+import { useVoiceInput } from '@renderer/audio/useVoiceInput'
 import { themes } from '@renderer/config/themes'
 import type { AssistantState } from '@shared/types'
 
@@ -35,6 +36,12 @@ export function SettingsPanel({
 
   const { ask, busy } = useAssistant()
   const [prompt, setPrompt] = useState('')
+
+  // Speaking to NOVA: a finalised utterance goes straight to the assistant.
+  const voice = useVoiceInput((text) => {
+    setPrompt('')
+    void ask(text)
+  })
 
   const submitPrompt = (): void => {
     void ask(prompt)
@@ -78,6 +85,21 @@ export function SettingsPanel({
                 }}
                 className="min-w-0 flex-1 rounded bg-white/10 px-2 py-1 text-white placeholder-white/30 outline-none focus:bg-white/15 disabled:opacity-50"
               />
+              {voice.supported && (
+                <button
+                  onClick={voice.listening ? voice.stop : voice.start}
+                  disabled={busy}
+                  title={voice.listening ? 'Stop listening' : 'Speak to NOVA'}
+                  aria-pressed={voice.listening}
+                  className={`rounded px-2 py-1 disabled:opacity-40 ${
+                    voice.listening
+                      ? 'animate-pulse bg-red-500/40 hover:bg-red-500/60'
+                      : 'bg-white/10 hover:bg-white/20'
+                  }`}
+                >
+                  🎙
+                </button>
+              )}
               <button
                 onClick={submitPrompt}
                 disabled={busy || prompt.trim().length === 0}
@@ -86,7 +108,15 @@ export function SettingsPanel({
                 Send
               </button>
             </div>
-            {busy && streamingReply !== null ? (
+            {voice.listening ? (
+              <div className="mt-2 rounded bg-white/5 p-2 text-white/70">
+                <div className="text-nova-teal">
+                  Listening… {voice.interim || <span className="text-white/30">say something</span>}
+                </div>
+              </div>
+            ) : voice.error ? (
+              <div className="mt-2 rounded bg-red-500/10 p-2 text-[#ffb27a]">{voice.error}</div>
+            ) : busy && streamingReply !== null ? (
               <div className="mt-2 rounded bg-white/5 p-2 text-white/70">
                 <div className="text-nova-glow">
                   {streamingReply || 'NOVA is thinking…'}

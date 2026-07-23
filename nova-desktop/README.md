@@ -50,10 +50,11 @@ npm run dev      # launches the Electron app with hot reload
 
 Right-click the orb (or use the tray menu) to open settings — enable the
 microphone, switch themes, tune sensitivities, drive the state machine, or type
-into **Ask NOVA** to talk to Claude and watch the reply stream in as the ring
-moves through `thinking → responding → listening`. Set `ANTHROPIC_API_KEY` for
-real replies (see below); without it NOVA runs in offline stub mode. Settings
-and tuning persist across restarts.
+into **Ask NOVA** — or tap the **🎙 mic button and speak** — to talk to Claude
+and watch the reply stream in as the ring moves through
+`thinking → responding → listening`. Set `ANTHROPIC_API_KEY` for real replies
+(see below); without it NOVA runs in offline stub mode. Settings and tuning
+persist across restarts.
 
 Press **Ctrl/Cmd + Shift + Space** anywhere to show or hide the orb.
 
@@ -103,6 +104,17 @@ every change under `nova-desktop/`.
 - `src/renderer/audio/useMicrophone.ts` — owns the mic lifecycle, pumps
   `AudioLevels` into the store each frame, and derives coarse
   `listening ↔ speaking` transitions from voice activity.
+- `src/renderer/audio/transcription.ts` — the **speech-to-text** hook point.
+  The UI depends only on the `TranscriptionService` interface;
+  `createTranscription()` picks the backend. Today that's `WebSpeechTranscription`
+  (Chromium's built-in recognizer — no key, no extra deps), with a
+  `NullTranscription` fallback. A cloud backend (e.g. streaming the mic to
+  Whisper via the main process, exactly like the LLM backend) can implement the
+  same interface and be returned here — **no component or animation changes**.
+- `src/renderer/audio/useVoiceInput.ts` — the "talk to NOVA" hook: manages the
+  transcription lifecycle, exposes the live interim transcript, and hands a
+  finalised utterance to `useAssistant().ask()`, so **speech flows straight into
+  Claude** and the orb runs `listening → thinking → responding`.
 
 ### Animation
 - `src/renderer/animation/glow.ts` — pure functions mapping audio + state →
