@@ -25,16 +25,17 @@ body,
 }
 
 /*
- * Orbitron is the intended wordmark font. If it isn't installed on the host,
- * the stack falls back gracefully. To bundle it, drop the .woff2 files in
- * resources/fonts and point the src below at them.
+ * Orbitron is bundled with the app (SIL Open Font License 1.1) as a variable
+ * font covering weights 400–900, so the wordmark looks identical offline on
+ * every platform. `local()` is tried first so a system install wins, then the
+ * bundled .woff2 is used; Vite fingerprints and inlines the URL at build time.
  */
 @font-face {
   font-family: 'Orbitron';
   font-style: normal;
-  font-weight: 700;
+  font-weight: 400 900;
   font-display: swap;
-  src: local('Orbitron'), local('Orbitron-Bold');
+  src: local('Orbitron'), url('./fonts/Orbitron.woff2') format('woff2');
 }
 
 .nova-draggable {

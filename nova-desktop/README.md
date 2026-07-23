@@ -99,10 +99,13 @@ npm run build:mac        # or :win / :linux  (electron-builder)
 
 ## Fonts
 
-The wordmark uses **Orbitron 700** with a graceful fallback stack
-(`Michroma`, `Rajdhani`, `sans-serif`). To bundle Orbitron for offline use,
-drop the `.woff2` files under `resources/fonts/` and point the `@font-face`
-`src` in `src/renderer/index.css` at them.
+The wordmark uses **Orbitron**, bundled with the app as a variable `.woff2`
+(`src/renderer/fonts/Orbitron.woff2`, weights 400–900) so it renders
+identically offline on macOS, Windows, and Linux — no system install or
+network fetch required. Vite fingerprints and bundles the file at build time.
+A graceful fallback stack (`Michroma`, `Rajdhani`, `sans-serif`) covers the
+unlikely case the font fails to load. Orbitron is licensed under the SIL Open
+Font License 1.1 (see `src/renderer/fonts/OFL.txt`).
 
 ## Future expansion (designed in, not bolted on)
 
