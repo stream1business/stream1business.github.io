@@ -1,0 +1,46 @@
+/* Self-hosted wordmark font — bundled so NOVA renders identically offline with
+   no external request. Orbitron is a variable font, so one woff2 covers the
+   700–900 weight range. The stack in tailwind.config.js falls back to
+   Michroma/Rajdhani/system sans if it ever fails to load. */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: url('./assets/fonts/orbitron-latin.woff2') format('woff2');
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  /* Fully transparent so only the orb graphic floats over the desktop. */
+  background: transparent;
+  overflow: hidden;
+  /* No text selection / native drag artefacts on the HUD. */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* Window-drag helpers for the frameless window. The orb is the drag handle;
+   panels and interactive controls opt back out. */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Buttons and inputs inside panels must escape the window-drag region. */
+button,
+input,
+a {
+  -webkit-app-region: no-drag;
+}
