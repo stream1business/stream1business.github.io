@@ -1,9 +1,14 @@
-/* Webfont for the wordmark. Must precede the @tailwind directives per the CSS
-   spec (@import has to come first). Orbitron 700 is the primary face; the stack
-   in tailwind.config.js falls back to Michroma/Rajdhani/system sans. To fully
-   self-host offline, drop a woff2 into src/renderer/assets and @font-face it
-   here instead. */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@700&family=Michroma&display=swap');
+/* Self-hosted wordmark font — bundled so NOVA renders identically offline with
+   no external request. Orbitron is a variable font, so one woff2 covers the
+   700–900 weight range. The stack in tailwind.config.js falls back to
+   Michroma/Rajdhani/system sans if it ever fails to load. */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+  src: url('./assets/fonts/orbitron-latin.woff2') format('woff2');
+}
 
 @tailwind base;
 @tailwind components;
