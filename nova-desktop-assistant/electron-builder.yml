@@ -1,0 +1,31 @@
+appId: com.stream1business.nova
+productName: NOVA
+directories:
+  buildResources: build
+  output: release/${version}
+files:
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+asarUnpack:
+  - resources/**
+# NOTE: Building installers for a platform other than the host generally
+# requires that platform's toolchain. Structure is here so `electron-builder`
+# can target macOS, Windows, and Linux from this single codebase later.
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.utilities
+win:
+  target:
+    - nsis
+    - zip
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Utility

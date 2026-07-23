@@ -1,0 +1,41 @@
+/* Webfont for the wordmark. Must precede the @tailwind directives per the CSS
+   spec (@import has to come first). Orbitron 700 is the primary face; the stack
+   in tailwind.config.js falls back to Michroma/Rajdhani/system sans. To fully
+   self-host offline, drop a woff2 into src/renderer/assets and @font-face it
+   here instead. */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@700&family=Michroma&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  /* Fully transparent so only the orb graphic floats over the desktop. */
+  background: transparent;
+  overflow: hidden;
+  /* No text selection / native drag artefacts on the HUD. */
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: default;
+}
+
+/* Window-drag helpers for the frameless window. The orb is the drag handle;
+   panels and interactive controls opt back out. */
+.drag-region {
+  -webkit-app-region: drag;
+}
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Buttons and inputs inside panels must escape the window-drag region. */
+button,
+input,
+a {
+  -webkit-app-region: no-drag;
+}
